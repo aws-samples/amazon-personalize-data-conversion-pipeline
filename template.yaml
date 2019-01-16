@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+    glue-personalize-converter
+
+    Converts input data to a format required for Amazon Personalize
+
+Parameters:
+    SourceBucketName:
+        Description: Name of the S3 Bucket where the source data exists.
+        Type: String
+    SourceDataPrefix:
+        Description: Name of the Prefix that contains the source data.
+        Type: String
+        Default: /source
+    DestinationBucketName:
+        Description: Name of the S3 Bucket where converted data should be stored.
+        Type: String
+    DestinationDataPrefix:
+        Description: Name of the Prefix that should contain the converted data.
+        Type: String
+        Default: /converted
+    TableName:
+        Description: Name of the Table that will contain the converted data, typically the same as source prefix.
+        Type: String
+        Default: source    
+    SourceColumnUserId:
+        Type: String
+        Description: Source data column name for User ID.
+        Default: user_id
+    SourceColumnItemId:
+        Type: String
+        Description: Source data column name for Item ID.
+        Default: item_id
+    SourceColumnEventType:
+        Type: String
+        Description: Source data column name for Event Type.
+        Default: event_type
+    SourceColumnEventValue:
+        Type: String
+        Description: Source data column name for Event Value.
+        Default: event_value
+    SourceColumnTimestamp:
+        Type: String
+        Description: Source data column name for Event Timestamp.
+        Default: timestamp
+    DestinationColumnUserId:
+        Type: String
+        Description: Destination data column name for User ID.
+        Default: USER_ID
+    DestinationColumnItemId:
+        Type: String
+        Description: Destination data column name for Item ID.
+        Default: ITEM_ID
+    DestinationColumnEventType:
+        Type: String
+        Description: Destination data column name for Event Type.
+        Default: EVENT_TYPE
+    DestinationColumnEventValue:
+        Type: String
+        Description: Destination data column name for Event Value.
+        Default: EVENT_VALUE
+    DestinationColumnTimestamp:
+        Type: String
+        Description: Destination data column name for Event Timestamp.
+        Default: TIMESTAMP
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups: 
+      - 
+        Label: 
+          default: "Job Configuration"
+        Parameters: 
+          - SourceBucketName
+          - SourceDataPrefix
+          - DestinationBucketName
+          - DestinationDataPrefix
+          - TableName
+      - 
+        Label: 
+          default: "Source Column Mappings"
+        Parameters: 
+          - SourceColumnUserId
+          - SourceColumnItemId
+          - SourceColumnEventType
+          - SourceColumnEventValue
+          - SourceColumnTimestamp
+      - 
+        Label: 
+          default: "Destination Column Mappings"
+        Parameters: 
+          - DestinationColumnUserId
+          - DestinationColumnItemId
+          - DestinationColumnEventType
+          - DestinationColumnEventValue
+          - DestinationColumnTimestamp
+
+Resources:
+
+    ConversionJobScriptGenerationFunction:
+        Type: AWS::Serverless::Function 
+        Properties:
+            CodeUri: generate_script/
+            Handler: app.lambda_handler
+            Runtime: python2.7
+            Environment:
+                Variables:
+                    CONVERSION_JOB_SCRIPT_BUCKET: !Ref ConversionJobBucket
+
+    ConversionJobGeneratedScript:
+        Type: Custom::ConversionJobGeneratedScript
+        Properties:
+            ServiceToken: !GetAtt ConversionJobScriptGenerationFunction.Arn
+            DestinationBucketName: !Ref DestinationBucketName
+            DestinationDataPrefix: !Ref DestinationDataPrefix
+            DatabaseName: !Ref ConversionGlueDatabase
+            TableName: !Ref TableName
+            SourceColumnUserId: !Ref SourceColumnUserId
+            SourceColumnItemId: !Ref SourceColumnItemId
+            SourceColumnEventType: !Ref SourceColumnEventType
+            SourceColumnEventValue: !Ref SourceColumnEventValue
+            SourceColumnTimestamp: !Ref SourceColumnTimestamp
+            DestinationColumnUserId: !Ref DestinationColumnUserId
+            DestinationColumnItemId: !Ref DestinationColumnItemId
+            DestinationColumnEventType: !Ref DestinationColumnEventType
+            DestinationColumnEventValue: !Ref DestinationColumnEventValue
+            DestinationColumnTimestamp: !Ref DestinationColumnTimestamp
+
+    ConversionGlueRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                -
+                    Effect: "Allow"
+                    Principal:
+                        Service:
+                            - "glue.amazonaws.com"
+                    Action:
+                        - "sts:AssumeRole"
+            Path: "/"
+            Policies:
+                - 
+                    PolicyName: "root"
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                            -
+                                Effect: "Allow"
+                                Action: "*"
+                                Resource: "*"
+
+    ConversionGlueDatabase:
+        Type: AWS::Glue::Database
+        Properties:
+            CatalogId: !Ref AWS::AccountId
+            DatabaseInput:
+                Description: "Database for Converting Data to Amazon Personalize Format"
+
+    ConversionGlueCrawler:
+        Type: AWS::Glue::Crawler
+        Properties:
+            Role: !GetAtt ConversionGlueRole.Arn
+            DatabaseName: !Ref ConversionGlueDatabase
+            Targets:
+                S3Targets:
+                - Path: !Join ['', [!Ref SourceBucketName, !Ref SourceDataPrefix]]
+            SchemaChangePolicy:
+                UpdateBehavior: "UPDATE_IN_DATABASE"
+                DeleteBehavior: "LOG"
+            Schedule:
+                ScheduleExpression: "cron(0/10 * ? * MON-FRI *)"
+
+    ConversionGlueJob:
+        Type: AWS::Glue::Job
+        Properties:
+            Command:
+                Name: "glueetl"
+                ScriptLocation: !GetAtt ConversionJobGeneratedScript.Script
+            DefaultArguments:
+                "--job-bookmark-option": "job-bookmark-disable"
+            ExecutionProperty:
+                MaxConcurrentRuns: 2
+            MaxRetries: 0
+            Role: !Ref ConversionGlueRole
+
+    ConversionJobBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            AccessControl: "BucketOwnerFullControl"
+
+    ConversionSchemaBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            AccessControl: "BucketOwnerFullControl"
+
+Outputs:
+  ConversionJobScriptLocation: 
+    Description: Location of the AWS Glue script used to convert data.
+    Value: !GetAtt ConversionJobGeneratedScript.Script
