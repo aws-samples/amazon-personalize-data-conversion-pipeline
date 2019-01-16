@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
     glue-personalize-converter
 
-    Converts input data to a format required for Amazon Personalize
+    Converts input data to a format required for Amazon Personalize.
 
 Parameters:
     SourceBucketName:
@@ -103,10 +103,13 @@ Resources:
         Properties:
             CodeUri: generate_script/
             Handler: app.lambda_handler
-            Runtime: python2.7
+            Runtime: python3.7
+            Policies:
+               - S3CrudPolicy:
+                    BucketName: !Ref ConversionScriptBucket            
             Environment:
                 Variables:
-                    CONVERSION_JOB_SCRIPT_BUCKET: !Ref ConversionJobBucket
+                    CONVERSION_JOB_SCRIPT_BUCKET: !Ref ConversionScriptBucket
 
     ConversionJobGeneratedScript:
         Type: Custom::ConversionJobGeneratedScript
@@ -186,7 +189,7 @@ Resources:
             MaxRetries: 0
             Role: !Ref ConversionGlueRole
 
-    ConversionJobBucket:
+    ConversionScriptBucket:
         Type: AWS::S3::Bucket
         Properties:
             AccessControl: "BucketOwnerFullControl"
