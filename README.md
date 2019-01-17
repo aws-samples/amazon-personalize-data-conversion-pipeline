@@ -61,3 +61,53 @@ aws cloudformation describe-stacks \
 * DestinationColumnEventType - Destination data column name for Event Type.
 * DestinationColumnEventValue - Destination data column name for Event Value.
 * DestinationColumnTimestamp - Destination data column name for Event Timestamp.
+
+## Source Data Format
+
+This solution will create a glue-crawler that will crawl the provided S3 bucket and prefix for data. Example data could be JSON objects representing click-stream events delivered via an AWS Kinesis Firehose Delivery Stream. 
+
+### Example
+
+```bash
+{"type": "useritem", "ITEM_ID": 35, "USER_ID": 1, "EVENT_TYPE": "click", 
+"EVENT_VALUE": 35, "TIMESTAMP": 1547159644}{"type": "useritem", "ITEM_ID": 34, 
+"USER_ID": 1, "EVENT_TYPE": "click", "EVENT_VALUE": 34, "TIMESTAMP": 1547159646}
+{"type": "useritem", "ITEM_ID": 29, "USER_ID": 1, "EVENT_TYPE": "click", 
+"EVENT_VALUE": 29, "TIMESTAMP": 1547159648}{"type": "useritem", "ITEM_ID": 25, 
+"USER_ID": 1, "EVENT_TYPE": "click", "EVENT_VALUE": 25, "TIMESTAMP": 1547159652}
+{"type": "useritem", "ITEM_ID": 32, "USER_ID": 1, "EVENT_TYPE": "click", 
+"EVENT_VALUE": 32, "TIMESTAMP": 1547159654}{"type": "useritem", "ITEM_ID": 22, 
+"USER_ID": 1, "EVENT_TYPE": "click", "EVENT_VALUE": 22, "TIMESTAMP": 1547159656}
+{"type": "useritem", "ITEM_ID": 25, "USER_ID": 1, "EVENT_TYPE": "click", 
+"EVENT_VALUE": 25, "TIMESTAMP": 1547159658}{"type": "useritem", "ITEM_ID": 16, 
+"USER_ID": 1, "EVENT_TYPE": "click", "EVENT_VALUE": 16, "TIMESTAMP": 1547159660}
+{"type": "useritem", "ITEM_ID": 19, "USER_ID": 1, "EVENT_TYPE": "click", 
+"EVENT_VALUE": 19, "TIMESTAMP": 1547159662}{"type": "useritem", "ITEM_ID": 18, 
+"USER_ID": 1, "EVENT_TYPE": "click", "EVENT_VALUE": 18, "TIMESTAMP": 1547159665}
+{"type": "useritem", "ITEM_ID": 4, "USER_ID": 1, "EVENT_TYPE": "click", 
+"EVENT_VALUE": 4, "TIMESTAMP": 1547159668}{"type": "useritem", "ITEM_ID": 7, 
+"USER_ID": 1, "EVENT_TYPE": "click", "EVENT_VALUE": 7, "TIMESTAMP": 1547159671}
+```
+
+## Output Data Format
+
+This solution will run a Glue Job against the source data to generate a repartitioned .CSV file containng all of the records located in your source data buckey. This data is formatted in the way that Amazon Personalize required in order to import data into your DataSet Group.
+
+### Example
+
+```bash
+ITEM_ID,USER_ID,EVENT_TYPE,EVENT_VALUE,TIMESTAMP
+11,1,click,11,1547157950
+35,1,click,35,1547159644
+34,1,click,34,1547159646
+29,1,click,29,1547159648
+25,1,click,25,1547159652
+32,1,click,32,1547159654
+22,1,click,22,1547159656
+25,1,click,25,1547159658
+16,1,click,16,1547159660
+19,1,click,19,1547159662
+18,1,click,18,1547159665
+4,1,click,4,1547159668
+7,1,click,7,1547159671
+```

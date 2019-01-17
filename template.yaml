@@ -101,7 +101,7 @@ Resources:
     ConversionJobScriptGenerationFunction:
         Type: AWS::Serverless::Function 
         Properties:
-            CodeUri: generate_script/
+            CodeUri: functions/generate_script/
             Handler: app.lambda_handler
             Runtime: python3.7
             Policies:
