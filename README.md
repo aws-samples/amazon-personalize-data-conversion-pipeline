@@ -1,6 +1,8 @@
 # Data Conversion Pipeline for Amazon Personalize
 
-This template will deploy a sample data-conversion pipeline to convert data into the format required for training Amazon Personalize (ie: .CSV).
+This template will deploy a sample data-conversion pipeline to convert data into the format required for training Amazon Personalize (ie: .CSV). Using the parmeters outlined below, you can customize this pipeline to convert data from various source formats into the formats required for Amazon Personalize User, Item, and Interaction data-sets.
+
+Data will be cataloged with a Glue Crawler, and transformed with a Glue Job. The functions deployed as part of this solution are CloudFormation Custom Resources that will generate a data conversion script based on the cataloged source data, and provide example AVRO schema files you can use to train your Amazon Personalize solution.
 
 ## Limitations
 
@@ -66,7 +68,11 @@ aws cloudformation describe-stacks \
 
 This solution will create a glue-crawler that will crawl the provided S3 bucket and prefix for data. Example data could be JSON objects representing click-stream events delivered via an AWS Kinesis Firehose Delivery Stream. 
 
-### Example
+### Source Bucket Structure
+
+s3://bucket_name/useritem/year/month/day/hour/file.json
+
+### Source Data Example
 
 ```bash
 {"type": "useritem", "ITEM_ID": 35, "USER_ID": 1, "EVENT_TYPE": "click", 
@@ -93,7 +99,11 @@ This solution will create a glue-crawler that will crawl the provided S3 bucket 
 
 This solution will run a Glue Job against the source data to generate a repartitioned .CSV file containng all of the records located in your source data buckey. This data is formatted in the way that Amazon Personalize required in order to import data into your DataSet Group.
 
-### Example
+### Output Bucket Structure
+
+s3://bucket_name/converted/file.csv
+
+### Output Data Example
 
 ```bash
 ITEM_ID,USER_ID,EVENT_TYPE,EVENT_VALUE,TIMESTAMP
