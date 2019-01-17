@@ -15,21 +15,24 @@ def lambda_handler(event, context):
     with open(script_template_file, 'r') as template_file:
         script_template=template_file.read()
 
-    # Replace Placeholder Values with ResourceProperties
-    script_template = script_template.replace('[S_ITEM_ID]', event['ResourceProperties']['SourceColumnItemId'])
-    script_template = script_template.replace('[D_ITEM_ID]', event['ResourceProperties']['DestinationColumnItemId'])
-    script_template = script_template.replace('[S_USER_ID]', event['ResourceProperties']['SourceColumnUserId'])
-    script_template = script_template.replace('[D_USER_ID]', event['ResourceProperties']['DestinationColumnUserId'])
-    script_template = script_template.replace('[S_EVENT_TYPE]', event['ResourceProperties']['SourceColumnEventType'])
-    script_template = script_template.replace('[D_EVENT_TYPE]', event['ResourceProperties']['DestinationColumnEventType'])
-    script_template = script_template.replace('[S_EVENT_VALUE]', event['ResourceProperties']['SourceColumnEventValue'])
-    script_template = script_template.replace('[D_EVENT_VALUE]', event['ResourceProperties']['DestinationColumnEventValue'])
-    script_template = script_template.replace('[S_TIME]', event['ResourceProperties']['SourceColumnTimestamp'])
-    script_template = script_template.replace('[D_TIME]', event['ResourceProperties']['DestinationColumnTimestamp'])            
+    # Create Column Mappings
+    map_item_id = '("{}", "int", "{}", "int")'.format(event['ResourceProperties']['SourceColumnItemId'], event['ResourceProperties']['DestinationColumnItemId'])
+    map_user_id = '("{}", "int", "{}", "int")'.format(event['ResourceProperties']['SourceColumnUserId'], event['ResourceProperties']['DestinationColumnUserId'])
+    map_event_type = '("{}", "string", "{}", "string")'.format(event['ResourceProperties']['SourceColumnEventType'], event['ResourceProperties']['DestinationColumnEventType'])
+    map_event_value = '("{}", "int", "{}", "int")'.format(event['ResourceProperties']['SourceColumnEventValue'], event['ResourceProperties']['DestinationColumnEventValue'])
+    map_timestamp = '("{}", "int", "{}", "int")'.format(event['ResourceProperties']['SourceColumnTimestamp'], event['ResourceProperties']['DestinationColumnTimestamp'])
+
+    column_mappings = '{},{},{},{},{}'.format(map_item_id, map_user_id, map_event_type, map_event_value, map_timestamp)
+
+    # Replace Column Mappings in Template
+    script_template = script_template.replace('[COLUMN_MAPPINGS]', column_mappings)
+
+    # Replace Template Placeholder Values with ResourceProperties          
     script_template = script_template.replace('[DATABASE_NAME]', event['ResourceProperties']['DatabaseName'])
     script_template = script_template.replace('[TABLE_NAME]', event['ResourceProperties']['TableName'])
     script_template = script_template.replace('[OUTPUT_PATH]', 's3://{}{}'.format(event['ResourceProperties']['DestinationBucketName'], event['ResourceProperties']['DestinationDataPrefix']))
 
+    # Output Location Details
     script_bucket = os.environ['CONVERSION_JOB_SCRIPT_BUCKET']
     script_filename = 'conversionScript'
 

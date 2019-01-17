@@ -97,7 +97,7 @@ s3://bucket_name/useritem/year/month/day/hour/file.json
 
 ## Output Data Format
 
-This solution will run a Glue Job against the source data to generate a repartitioned .CSV file containng all of the records located in your source data buckey. This data is formatted in the way that Amazon Personalize required in order to import data into your DataSet Group.
+This solution will run a Glue Job against the source data to generate a repartitioned .CSV file containing all of the records located in your source data bucket. This data is formatted in the way that Amazon Personalize required in order to import data into your DataSet Group.
 
 ### Output Bucket Structure
 
