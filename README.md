@@ -4,11 +4,13 @@ This template will deploy a sample data-conversion pipeline to convert data into
 
 Data will be cataloged with a Glue Crawler, and transformed with a Glue Job. The functions deployed as part of this solution are CloudFormation Custom Resources that will generate a data conversion script based on the cataloged source data, and provide example AVRO schema files you can use to train your Amazon Personalize solution.
 
+This solution will also generate an AVRO schema file which represents the data that was converted. This schema file can be used to create a data set within Amazon Personalize.
+
 ## Limitations
 
 1. This solution only supports the most basic columns required to train Amazon Personalize. To add additional columns you would need to extend the template and the transformtion job script.
 
-## Roadmap
+## Planned Improvements
 
 1. Better handling of additional columns.
 2. Annotations in Glue job to better explain each step.
@@ -62,6 +64,11 @@ aws cloudformation describe-stacks \
 * DestinationColumnEventType - Destination data column name for Event Type.
 * DestinationColumnEventValue - Destination data column name for Event Value.
 * DestinationColumnTimestamp - Destination data column name for Event Timestamp.
+
+## Outputs
+
+* ConversionJobSchemaLocation - Schema file used for creating a data set in Amazon Personalize.
+* ConversionJobScriptLocation - Glue Job Script for data conversion job (Can be customized as needed).
 
 ## Source Data Format
 
@@ -124,6 +131,34 @@ ITEM_ID,USER_ID,EVENT_TYPE,EVENT_VALUE,TIMESTAMP
 ### Output Schema Example
 
 ```bash
+{
+    "type": "record",
+    "name": "Interactions",
+    "namespace": "com.amazonaws.personalize.schema",
+    "fields": [
+        {
+            "name": "ITEM_ID",
+            "type": "string"
+        },
+        {
+            "name": "USER_ID",
+            "type": "string"
+        },
+        {
+            "name": "EVENT_TYPE",
+            "type": "string"
+        },
+        {
+            "name": "EVENT_VALUE",
+            "type": "string"
+        },
+        {
+            "name": "TIMESTAMP",
+            "type": "long"
+        }
+    ],
+    "version": "1.0"
+}
 ```
 
 ### Build 
