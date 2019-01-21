@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "[DATA_SOURCE_NAME]",
+  "namespace": "com.amazonaws.personalize.schema",
+  "fields": [],
+  "version": "1.0"
+}

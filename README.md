@@ -12,8 +12,7 @@ Data will be cataloged with a Glue Crawler, and transformed with a Glue Job. The
 
 1. Better handling of additional columns.
 2. Annotations in Glue job to better explain each step.
-3. Generate an example Avro schema for each output data set based on columns.
-4. Better handling of column exclusions (currently adds empty data to output .CSV)
+3. Better handling of column exclusions (currently adds empty data to output .CSV)
 
 ## Deployment
 
@@ -120,4 +119,23 @@ ITEM_ID,USER_ID,EVENT_TYPE,EVENT_VALUE,TIMESTAMP
 18,1,click,18,1547159665
 4,1,click,4,1547159668
 7,1,click,7,1547159671
+```
+
+### Output Schema Example
+
+```bash
+```
+
+### Build 
+
+```bash
+sam build --use-container
+```
+
+### Package
+
+```bash
+sam package \
+    --output-template-file packaged.yaml \
+    --s3-bucket [BUCKET_NAME] --debug
 ```

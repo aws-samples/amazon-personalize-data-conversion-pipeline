@@ -23,7 +23,15 @@ Parameters:
     TableName:
         Description: Name of the Table that will contain the converted data, typically the same as source prefix.
         Type: String
-        Default: source    
+        Default: source
+    PersonalizeDatasetName:
+        Description: Name of the Personalize Data Set data will convered for.
+        Type: String
+        Default: Interactions
+        AllowedValues: 
+            - Interactions
+            - Item
+            - User
     SourceColumnUserId:
         Type: String
         Description: Source data column name for User ID.
@@ -78,6 +86,11 @@ Metadata:
           - DestinationDataPrefix
           - TableName
       - 
+        Label:
+          default: "Personalize Configuration"
+        Parameters:
+          - PersonalizeDatasetName
+      - 
         Label: 
           default: "Source Column Mappings"
         Parameters: 
@@ -111,6 +124,19 @@ Resources:
                 Variables:
                     CONVERSION_JOB_SCRIPT_BUCKET: !Ref ConversionScriptBucket
 
+    ConversionJobSchemaGenerationFunction:
+        Type: AWS::Serverless::Function 
+        Properties:
+            CodeUri: functions/generate_schema/
+            Handler: app.lambda_handler
+            Runtime: python3.7
+            Policies:
+               - S3CrudPolicy:
+                    BucketName: !Ref ConversionSchemaBucket            
+            Environment:
+                Variables:
+                    CONVERSION_JOB_SCHEMA_BUCKET: !Ref ConversionSchemaBucket
+
     ConversionJobGeneratedScript:
         Type: Custom::ConversionJobGeneratedScript
         Properties:
@@ -124,6 +150,17 @@ Resources:
             SourceColumnEventType: !Ref SourceColumnEventType
             SourceColumnEventValue: !Ref SourceColumnEventValue
             SourceColumnTimestamp: !Ref SourceColumnTimestamp
+            DestinationColumnUserId: !Ref DestinationColumnUserId
+            DestinationColumnItemId: !Ref DestinationColumnItemId
+            DestinationColumnEventType: !Ref DestinationColumnEventType
+            DestinationColumnEventValue: !Ref DestinationColumnEventValue
+            DestinationColumnTimestamp: !Ref DestinationColumnTimestamp
+
+    ConversionJobGeneratedSchema:
+        Type: Custom::ConversionJobGeneratedSchema
+        Properties:
+            ServiceToken: !GetAtt ConversionJobSchemaGenerationFunction.Arn
+            PersonalizeDatasetName: !Ref PersonalizeDatasetName
             DestinationColumnUserId: !Ref DestinationColumnUserId
             DestinationColumnItemId: !Ref DestinationColumnItemId
             DestinationColumnEventType: !Ref DestinationColumnEventType
@@ -189,6 +226,15 @@ Resources:
             MaxRetries: 0
             Role: !Ref ConversionGlueRole
 
+    ConversionGlueJobTrigger:
+        Type: AWS::Glue::Trigger
+        Properties:
+            Type: SCHEDULED
+            Description: "Runs Conversion Job on a Schedule"
+            Schedule: cron(0/10 * ? * MON-FRI *)
+            Actions:
+                - JobName: !Ref ConversionGlueJob
+
     ConversionScriptBucket:
         Type: AWS::S3::Bucket
         Properties:
@@ -200,6 +246,10 @@ Resources:
             AccessControl: "BucketOwnerFullControl"
 
 Outputs:
-  ConversionJobScriptLocation: 
-    Description: Location of the AWS Glue script used to convert data.
-    Value: !GetAtt ConversionJobGeneratedScript.Script
+    ConversionJobScriptLocation: 
+        Description: Location of the AWS Glue script used to convert data.
+        Value: !GetAtt ConversionJobGeneratedScript.Script
+
+    ConversionJobSchemaLocation: 
+        Description: Location of the AWS Personalize Schema file used to import data.
+        Value: !GetAtt ConversionJobGeneratedSchema.Schema
