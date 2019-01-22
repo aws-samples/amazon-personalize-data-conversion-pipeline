@@ -22,7 +22,14 @@ def lambda_handler(event, context):
     map_event_value = '("{}", "int", "{}", "int")'.format(event['ResourceProperties']['SourceColumnEventValue'], event['ResourceProperties']['DestinationColumnEventValue'])
     map_timestamp = '("{}", "int", "{}", "int")'.format(event['ResourceProperties']['SourceColumnTimestamp'], event['ResourceProperties']['DestinationColumnTimestamp'])
 
-    column_mappings = '{},{},{},{},{}'.format(map_item_id, map_user_id, map_event_type, map_event_value, map_timestamp)
+    # Setup Column Mappings based on PersonalizeDatasetName (User, Item, Interactions)
+    if event['ResourceProperties']['PersonalizeDatasetName'] == "User":
+        column_mappings = '{}'.format(map_user_id)
+    elif event['ResourceProperties']['PersonalizeDatasetName'] == "Item":
+        column_mappings = '{}'.format(map_item_id)
+    else: 
+        # Map all if not User/Item
+        column_mappings = '{},{},{},{},{}'.format(map_item_id, map_user_id, map_event_type, map_event_value, map_timestamp)
 
     # Replace Column Mappings in Template
     script_template = script_template.replace('[COLUMN_MAPPINGS]', column_mappings)

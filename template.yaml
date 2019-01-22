@@ -145,6 +145,7 @@ Resources:
             DestinationDataPrefix: !Ref DestinationDataPrefix
             DatabaseName: !Ref ConversionGlueDatabase
             TableName: !Ref TableName
+            PersonalizeDatasetName: !Ref PersonalizeDatasetName
             SourceColumnUserId: !Ref SourceColumnUserId
             SourceColumnItemId: !Ref SourceColumnItemId
             SourceColumnEventType: !Ref SourceColumnEventType

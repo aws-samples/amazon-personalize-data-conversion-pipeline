@@ -19,50 +19,59 @@ def lambda_handler(event, context):
     schema_template['name'] = event['ResourceProperties']['PersonalizeDatasetName']
 
     # Add Fields to Schema Template
-    if event['ResourceProperties']['DestinationColumnItemId']:
+    # If PersonalizeDatasetName is Interactions add all columns
+    if event['ResourceProperties']['PersonalizeDatasetName'] == "Interactions":
 
-        field = {
-            'name': event['ResourceProperties']['DestinationColumnItemId'],
-            'type': 'string'
-        }
-
-        schema_template['fields'].append(field)
-
-    if event['ResourceProperties']['DestinationColumnUserId']:
-
-        field = {
-                'name': event['ResourceProperties']['DestinationColumnUserId'],
+        if event['ResourceProperties']['DestinationColumnItemId']:
+            field = {
+                'name': event['ResourceProperties']['DestinationColumnItemId'],
                 'type': 'string'
             }
-        
-        schema_template['fields'].append(field)
+            schema_template['fields'].append(field)
 
-    if event['ResourceProperties']['DestinationColumnEventType']:
+        if event['ResourceProperties']['DestinationColumnUserId']:
+            field = {
+                    'name': event['ResourceProperties']['DestinationColumnUserId'],
+                    'type': 'string'
+                }
+            schema_template['fields'].append(field)
 
-        field = {
-                'name': event['ResourceProperties']['DestinationColumnEventType'],
+        if event['ResourceProperties']['DestinationColumnEventType']:
+            field = {
+                    'name': event['ResourceProperties']['DestinationColumnEventType'],
+                    'type': 'string'
+                }
+            schema_template['fields'].append(field)
+
+        if event['ResourceProperties']['DestinationColumnEventValue']:
+            field = {
+                    'name': event['ResourceProperties']['DestinationColumnEventValue'],
+                    'type': 'string'
+                }
+            schema_template['fields'].append(field)
+
+        if event['ResourceProperties']['DestinationColumnTimestamp']:
+            field = {
+                    'name': event['ResourceProperties']['DestinationColumnTimestamp'],
+                    'type': 'long'
+                }
+            schema_template['fields'].append(field)
+
+    # If PersonalizeDatasetName is User only add the UserId column
+    if event['ResourceProperties']['PersonalizeDatasetName'] == "User":
+            field = {
+                    'name': event['ResourceProperties']['DestinationColumnUserId'],
+                    'type': 'string'
+                }
+            schema_template['fields'].append(field)
+
+    # If PersonalizeDatasetName is Item only add the ItemId column
+    if event['ResourceProperties']['PersonalizeDatasetName'] == "Item":
+            field = {
+                'name': event['ResourceProperties']['DestinationColumnItemId'],
                 'type': 'string'
             }
-
-        schema_template['fields'].append(field)
-
-    if event['ResourceProperties']['DestinationColumnEventValue']:
-
-        field = {
-                'name': event['ResourceProperties']['DestinationColumnEventValue'],
-                'type': 'string'
-            }
-
-        schema_template['fields'].append(field)
-
-    if event['ResourceProperties']['DestinationColumnTimestamp']:
-
-        field = {
-                'name': event['ResourceProperties']['DestinationColumnTimestamp'],
-                'type': 'long'
-            }
-
-        schema_template['fields'].append(field)
+            schema_template['fields'].append(field)
 
     # Output Location Details
     schema_bucket = os.environ['CONVERSION_JOB_SCHEMA_BUCKET']
