@@ -1,4 +1,6 @@
-# Data Conversion Pipeline for Amazon Personalize
+# Amazon Personalize Data Conversion Pipeline
+
+![Alt text](docs/diagram.png?raw=true "Diagram")
 
 This template will deploy a sample data-conversion pipeline to convert data into the format required for training Amazon Personalize (ie: .CSV). Using the parmeters outlined below, you can customize this pipeline to convert data from various source formats into the formats required for Amazon Personalize User, Item, and Interaction data-sets.
 
@@ -8,13 +10,7 @@ This solution will also generate an AVRO schema file which represents the data t
 
 ## Limitations
 
-1. This solution only supports the most basic columns required to train Amazon Personalize. To add additional columns you would need to extend the template and the transformtion job script.
-
-## Planned Improvements
-
-1. Better handling of additional columns.
-2. Annotations in Glue job to better explain each step.
-3. Better handling of column exclusions (currently adds empty data to output .CSV)
+* This solution only supports the most basic columns required to train Amazon Personalize. To add additional columns you would need to extend the template and the transformtion job script.
 
 ## Deployment
 
@@ -25,27 +21,66 @@ This solution will also generate an AVRO schema file which represents the data t
 3. Create an S3 bucket to store the packaged code and replace S3_BUCKET_TO_STAGE_CODE with the name of your bucket in the comamands below. 
 4. This solution assumes that you have source data located in S3 and partitioned by data type (ie: item, user, user-item interactions).
 
-### Building the project
+### Building and Packaging
 
 AWS CLI commands to package, deploy and describe outputs defined within the cloudformation stack:
 
-```bash
+## Pre Launch Steps
 
-sam build
+```bash
+sam build --use-container
 
 sam package \
     --output-template-file packaged.yaml \
     --s3-bucket S3_BUCKET_TO_STAGE_CODE
+```
 
+## Launching the Stack
+
+### Console
+
+1. Logon to the AWS Console
+2. Open the CloudFormation service.
+3. Click "Create Stack"
+4. Navigate to the packaged.yaml file stored locally (this package is created with the sam package command and references code artifacts in S3)
+5. Enter the required parameters and launch the stack (you will need to confirm a few more screens, and generate a change-set.). There's an explaination of each parameter further down in this document.
+
+![Alt text](docs/parameters.png?raw=true "Parameters")
+
+### CLI
+
+Repalce the placeholder values in [] with your values and then run this command with a properly configured SAM environment. You can also customize the source and destination columns as needed.
+
+```bash
 sam deploy \
     --template-file packaged.yaml \
-    --stack-name glue-personalize-converter \
+    --stack-name amazon-personalize-data-conversion-pipeline \
     --capabilities CAPABILITY_IAM \
-    --parameter-overrides MyParameterSample=MySampleValue
+    --parameter-overrides \
+    SourceBucketName=[SOURCE_BUCKET] \
+    SourceDataPrefix=[SOURCE_PREFIX] \
+    DestinationBucketName=[DESTINATION_BUCKET] \
+    DestinationDataPrefix=[DESGINATION_PREFIX] \
+    TableName=[TABLE_NAME] \
+    PersonalizeDatasetName=Interactions \
+    SourceColumnUserId=USER_ID \
+    SourceColumnItemId=ITEM_ID \
+    SourceColumnEventType=EVENT_TYPE \
+    SourceColumnEventValue=EVENT_VALUE \
+    SourceColumnTimestamp=TIMESTAMP \
+    DestinationColumnUserId=user_id \
+    DestinationColumnItemId=item_id \
+    DestinationColumnEventType=event_type \
+    DestinationColumnEventValue=event_value \
+    DestinationColumnTimestamp=timestamp
 
 aws cloudformation describe-stacks \
-    --stack-name glue-personalize-converter --query 'Stacks[].Outputs'
+    --stack-name amazon-personalize-data-conversion-pipeline --query 'Stacks[].Outputs'
 ```
+
+## Post Launch Steps
+
+1. The stack will launch a scheduled AWS Glue Crawler that runs on a 15 minute interval. To enable data conversion, you will need to enable the AWS Glue Trigger that schedules the conversion job, or run the conversion job manually. Once the trigger is enabled the conversion job will run every 15 minutes. You may want to adjust the frequency as needed for your use-case and to minimize costs.
 
 ## Parameters
 
@@ -53,7 +88,8 @@ aws cloudformation describe-stacks \
 * SourceDataPrefix - Name of the Prefix that contains the source data (ie: /user, /item, /interactions).
 * DestinationBucketName - Name of the S3 Bucket where converted data should be stored.
 * DestinationDataPrefix - Name of the Prefix that should contain the converted data.
-* TableName - Name of the Table that will contain the converted data, typically the same as source prefix (ie: user, item, interactions)
+* TableName - Name of the Table that will contain the converted data, typically the same as source prefix (ie: user, item, interactions).
+* PersonalizeDatasetName - The Amazon Personalize Data Set you are importing data into (Interactions, User, Item).
 * SourceColumnUserId - Source data column name for User ID.
 * SourceColumnItemId - Source data column name for Item ID.
 * SourceColumnEventType -Source data column name for Event Type.
@@ -159,18 +195,4 @@ ITEM_ID,USER_ID,EVENT_TYPE,EVENT_VALUE,TIMESTAMP
     ],
     "version": "1.0"
 }
-```
-
-### Build 
-
-```bash
-sam build --use-container
-```
-
-### Package
-
-```bash
-sam package \
-    --output-template-file packaged.yaml \
-    --s3-bucket [BUCKET_NAME] --debug
 ```
