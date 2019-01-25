@@ -4,9 +4,9 @@
 
 This template will deploy a sample data-conversion pipeline to convert data into the format required for training Amazon Personalize (ie: .CSV). Using the parmeters outlined below, you can customize this pipeline to convert data from various source formats into the formats required for Amazon Personalize User, Item, and Interaction data-sets.
 
-Data will be cataloged with a Glue Crawler, and transformed with a Glue Job. The functions deployed as part of this solution are CloudFormation Custom Resources that will generate a data conversion script based on the cataloged source data, and provide example AVRO schema files you can use to train your Amazon Personalize solution.
+Data will be cataloged with a Glue Crawler, and transformed with a Glue Job. The functions deployed as part of this solution are CloudFormation Custom Resources that will generate a data conversion script based on the cataloged source data.
 
-This solution will also generate an AVRO schema file which represents the data that was converted. This schema file can be used to create a data set within Amazon Personalize.
+This solution will also generate an AVRO schema file which represents the data that was converted. This schema file can be used to create a data set within Amazon Personalize. For more details on the AVRO scema and Amazon Personalize Data Sets please refer to the Amazon Personalize documention.
 
 ## Limitations
 
@@ -19,7 +19,7 @@ This solution will also generate an AVRO schema file which represents the data t
 1. Install the AWS Serverless Application Model CLI - https://aws.amazon.com/serverless/sam/
 2. Configure your local AWS Credentials (aws configure).
 3. Create an S3 bucket to store the packaged code and replace S3_BUCKET_TO_STAGE_CODE with the name of your bucket in the comamands below. 
-4. This solution assumes that you have source data located in S3 and partitioned by data type (ie: item, user, user-item interactions).
+4. This solution assumes that you have source data located in S3 and partitioned by data type (ie: item, user, user-item interactions). You can see some example source data below in JSON format, however this solution should work for any source data type that can be classified with AWS Glue.
 
 ### Building and Packaging
 
@@ -60,7 +60,7 @@ sam deploy \
     SourceBucketName=[SOURCE_BUCKET] \
     SourceDataPrefix=[SOURCE_PREFIX] \
     DestinationBucketName=[DESTINATION_BUCKET] \
-    DestinationDataPrefix=[DESGINATION_PREFIX] \
+    DestinationDataPrefix=[DESTINATION_PREFIX] \
     TableName=[TABLE_NAME] \
     PersonalizeDatasetName=Interactions \
     SourceColumnUserId=USER_ID \
@@ -80,7 +80,7 @@ aws cloudformation describe-stacks \
 
 ## Post Launch Steps
 
-1. The stack will launch a scheduled AWS Glue Crawler that runs on a 15 minute interval. To enable data conversion, you will need to enable the AWS Glue Trigger that schedules the conversion job, or run the conversion job manually. Once the trigger is enabled the conversion job will run every 15 minutes. You may want to adjust the frequency as needed for your use-case and to minimize costs.
+* The stack will launch a scheduled AWS Glue Crawler that runs on a 15 minute interval. To enable data conversion, you will need to enable the AWS Glue Trigger that schedules the conversion job, or run the conversion job manually. Once the trigger is enabled the conversion job will run every 15 minutes. You may want to adjust the frequency as needed for your use-case and to minimize costs.
 
 ## Parameters
 
